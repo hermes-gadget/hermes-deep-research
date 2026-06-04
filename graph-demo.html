@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Research — Agent Graph Demo</title>
+<style>
+  :root { --bg:#0b1220; --panel:#0f172a; --txt:#e2e8f0; --pri:#22d3ee; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--txt); font-family:system-ui, sans-serif; display:flex; flex-direction:column; height:100vh; }
+  header { padding:12px 20px; background:var(--panel); border-bottom:1px solid #1e293b; display:flex; gap:10px; align-items:center; }
+  h1 { font-size:16px; font-weight:600; letter-spacing:0.3px; }
+  button { background:#1e293b; color:var(--txt); border:1px solid #334155; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; transition:all .15s; }
+  button:hover { border-color:var(--pri); color:var(--pri); }
+  button.primary { background:var(--pri); color:#0b1220; border-color:var(--pri); font-weight:600; }
+  button.primary:hover { filter:brightness(1.1); }
+  #stage { flex:1; position:relative; min-height:0; }
+  canvas { display:block; width:100%; height:100%; }
+  .legend { position:absolute; bottom:12px; left:12px; background:rgba(15,23,42,0.9); border:1px solid #1e293b; padding:8px 12px; border-radius:8px; font-size:11px; line-height:1.6; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 Agent Graph</h1>
+  <button class="primary" id="btnStart">Start Research</button>
+  <button id="btnStep">+ Step</button>
+  <button id="btnDoc">+ Document</button>
+  <button id="btnErr">Inject Error</button>
+  <button id="btnReset">Reset</button>
+</header>
+<div id="stage"><canvas id="g"></canvas>
+  <div class="legend">
+    <span class="dot" style="background:#22d3ee"></span>Orchestrator<br>
+    <span class="dot" style="background:#818cf8"></span>Step<br>
+    <span class="dot" style="background:#34d399"></span>Document<br>
+    <span class="dot" style="background:#f87171"></span>Error
+  </div>
+</div>
+<script src="dashboard/dist/graph.js"></script>
+<script>
+  var canvas = document.getElementById('g');
+  var graph = new AgentGraph(canvas);
+  graph.setRoot("Orchestrator");
+
+  var stepId = 0;
+  var activeSteps = [];
+
+  function randLabel(prefix) {
+    var words = ["Alpha","Beta","Gamma","Delta","Query","Source","Excerpt","Analysis","Synthesis","Crawl"];
+    return prefix + " " + words[Math.floor(Math.random()*words.length)];
+  }
+
+  document.getElementById('btnStart').onclick = function () {
+    graph.setRoot("Orchestrator");
+    activeSteps = [];
+    stepId = 0;
+    var steps = ["Decompose","Search","Analyze","Synthesize"];
+    steps.forEach(function (s, i) {
+      setTimeout(function () {
+        var id = "s" + (++stepId);
+        graph.addNode(id, "step", s, "root");
+        graph.setState(id, "active", 0);
+        activeSteps.push(id);
+        /* Simulate progress then completion */
+        var prog = 0;
+        var iv = setInterval(function () {
+          prog += 0.05;
+          graph.setState(id, "active", prog);
+          if (prog >= 1) { clearInterval(iv); graph.setState(id, "done", 1); }
+        }, 120);
+      }, i * 350);
+    });
+  };
+
+  document.getElementById('btnStep').onclick = function () {
+    var id = "s" + (++stepId);
+    graph.addNode(id, "step", randLabel("Step"), "root");
+    graph.setState(id, "active", 0.2);
+    activeSteps.push(id);
+  };
+
+  document.getElementById('btnDoc').onclick = function () {
+    if (!activeSteps.length) return;
+    var parent = activeSteps[Math.floor(Math.random()*activeSteps.length)];
+    var id = "d" + (++stepId);
+    graph.addNode(id, "doc", randLabel("Doc"), parent);
+    graph.setState(id, "done", 1);
+  };
+
+  document.getElementById('btnErr').onclick = function () {
+    if (!activeSteps.length) return;
+    var id = activeSteps[Math.floor(Math.random()*activeSteps.length)];
+    graph.setState(id, "error", 1);
+  };
+
+  document.getElementById('btnReset').onclick = function () {
+    graph.setRoot("Orchestrator");
+    activeSteps = [];
+    stepId = 0;
+  };
+</script>
+</body>
+</html>
