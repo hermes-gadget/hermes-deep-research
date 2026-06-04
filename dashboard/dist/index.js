@@ -31,7 +31,7 @@
     this.parent = parent || null;
     this.x = 0; this.y = 0;
     this.vx = 0; this.vy = 0;
-    this.radius = type === "root" ? 28 : type === "agent" ? 22 : type === "step" ? 16 : 12;
+    this.radius = type === "root" ? 20 : type === "agent" ? 14 : type === "step" ? 10 : 7;
     this.targetR = this.radius;
     this.birth = performance.now();
     this.state = "spawn";    /* spawn | idle | active | done | error */
@@ -320,43 +320,70 @@
       if (!canvasRef.current) return;
       var graph = new AgentGraph(canvasRef.current);
       graph.setRoot("Orchestrator");
-      var agentId = "agent-" + job.id;
-      graph.addNode(agentId, "agent", "Research Agent", "root");
-      graph.setState(agentId, "active", 0);
+      var maxRounds = job.max_rounds || 3;
       var stepNames = ["Decompose", "Search", "Analyze", "Synthesize"];
-      stepNames.forEach(function (name, i) {
-        var sid = "step-" + job.id + "-" + i;
-        graph.addNode(sid, "step", name, agentId);
-        graph.setState(sid, "idle", 0);
-      });
+      for (var r = 1; r <= maxRounds; r++) {
+        var agentId = "agent-" + job.id + "-r" + r;
+        graph.addNode(agentId, "agent", "R" + r, "root");
+        graph.setState(agentId, "idle", 0);
+        stepNames.forEach(function (name, i) {
+          var sid = "step-" + job.id + "-r" + r + "-" + i;
+          graph.addNode(sid, "step", name, agentId);
+          graph.setState(sid, "idle", 0);
+        });
+      }
       graphRef.current = graph;
       return function () { graph.destroy(); };
     }, [job.id]);
     useEffect(function () {
       if (!graphRef.current) return;
       var graph = graphRef.current;
-      var agentId = "agent-" + job.id;
-      if (job.status === "error") {
-        graph.setState(agentId, "error", 1);
-      } else if (job.status === "done") {
-        graph.setState(agentId, "done", 1);
-      } else {
-        graph.setState(agentId, "active", 0.5);
+      var maxRounds = job.max_rounds || 3;
+      var stepNames = ["Decompose", "Search", "Analyze", "Synthesize"];
+      for (var r = 1; r <= maxRounds; r++) {
+        var agentId = "agent-" + job.id + "-r" + r;
+        if (job.status === "error") {
+          graph.setState(agentId, "error", 1);
+        } else if (job.status === "done") {
+          graph.setState(agentId, "done", 1);
+        } else {
+          graph.setState(agentId, "active", 0.5);
+        }
       }
       var steps = job.steps || [];
-      var stepNames = ["Decompose", "Search", "Analyze", "Synthesize"];
-      steps.forEach(function (s, i) {
-        var sid = "step-" + job.id + "-" + i;
+      // Reset all steps to idle
+      for (var r2 = 1; r2 <= maxRounds; r2++) {
+        stepNames.forEach(function (_name, i) {
+          var sid = "step-" + job.id + "-r" + r2 + "-" + i;
+          graph.setState(sid, "idle", 0);
+        });
+      }
+      steps.forEach(function (s) {
+        var round = s.round || 1;
+        if (round < 1) round = 1;
+        if (round > maxRounds) round = maxRounds;
+        var stepName = s.step.charAt(0).toUpperCase() + s.step.slice(1);
+        var stepIdx = stepNames.indexOf(stepName);
+        if (stepIdx < 0) {
+          // fuzzy match
+          stepNames.forEach(function (n, i) {
+            if (n.toLowerCase() === s.step.toLowerCase()) stepIdx = i;
+          });
+        }
+        if (stepIdx < 0) return;
+        var sid = "step-" + job.id + "-r" + round + "-" + stepIdx;
         if (s.step === "done" || s.step === "synthesize") graph.setState(sid, "done", 1);
         else if (s.step === "error") graph.setState(sid, "error", 1);
         else if (s.step === job.current_step) graph.setState(sid, "active", 0.3);
         else graph.setState(sid, "idle", 0);
       });
-      /* If no steps yet, light up first step based on current_step */
+      /* If no steps yet, light up current_step in round 1 */
       if (!steps.length && job.current_step) {
         stepNames.forEach(function (name, i) {
-          var sid = "step-" + job.id + "-" + i;
-          if (name.toLowerCase() === job.current_step.toLowerCase()) graph.setState(sid, "active", 0.3);
+          if (name.toLowerCase() === job.current_step.toLowerCase()) {
+            var sid = "step-" + job.id + "-r1-" + i;
+            graph.setState(sid, "active", 0.3);
+          }
         });
       }
     }, [job.status, job.steps, job.current_step]);

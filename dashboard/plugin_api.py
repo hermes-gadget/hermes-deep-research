@@ -374,11 +374,11 @@ def _run_research(job_id: str, query: str, max_rounds: int = 3, mode: str = "aut
     parent_id = job.get("kanban_parent_id")
     child_map = job.get("kanban_children", {})
 
-    def _step(name: str, detail: str = "") -> None:
+    def _step(name: str, detail: str = "", round: int = 0) -> None:
         job["current_step"] = name
         job["updated_at"] = time.time()
         if detail:
-            job["steps"].append({"step": name, "detail": detail, "ts": time.time()})
+            job["steps"].append({"step": name, "detail": detail, "round": round, "ts": time.time()})
         # Update Kanban child task status
         cid = child_map.get(name)
         if cid:
@@ -453,9 +453,9 @@ def _run_research(job_id: str, query: str, max_rounds: int = 3, mode: str = "aut
                 if not queries:
                     break
 
-            _step("search", f"Round {rnd + 1}/{max_rounds}: searching...")
+            _step("search", f"Round {rnd + 1}/{max_rounds}: searching...", round=rnd + 1)
             for q in queries:
-                _step("search", f"Searching: {q[:80]}")
+                _step("search", f"Searching: {q[:80]}", round=rnd + 1)
                 results = web_search(q)
 
                 for r in results[:5]:
@@ -463,7 +463,7 @@ def _run_research(job_id: str, query: str, max_rounds: int = 3, mode: str = "aut
                     if not url or url in seen:
                         continue
                     seen.add(url)
-                    _step("extract", f"Reading: {url[:70]}...")
+                    _step("extract", f"Reading: {url[:70]}...", round=rnd + 1)
                     content = web_extract(url)
                     gathered.append(f"[{url}]\n{content}")
                     add_source(url, r.get("title", q), r.get("snippet", ""), content)
@@ -569,6 +569,7 @@ def start_research(body: dict) -> dict:
         "id": job_id,
         "query": query,
         "mode": (body.get("mode") or "auto").strip().lower(),
+        "max_rounds": max_rounds,
         "status": "running",
         "current_step": "init",
         "steps": [],
@@ -621,6 +622,7 @@ def get_status(job_id: str) -> dict:
         "has_report": job["report"] is not None,
         "error": job["error"],
         "updated_at": job["updated_at"],
+        "max_rounds": job.get("max_rounds", 3),
         "kanban_parent_id": job.get("kanban_parent_id"),
         "kanban_children": _kanban_get_children(job.get("kanban_parent_id") or "") if job.get("kanban_parent_id") else [],
     }
@@ -677,6 +679,7 @@ def list_history() -> dict:
                 "id": entry.get("id", fp.stem),
                 "query": entry.get("query", ""),
                 "mode": entry.get("mode", "auto"),
+                "max_rounds": entry.get("max_rounds", 3),
                 "sources_count": len(entry.get("sources", [])),
                 "created_at": entry.get("created_at"),
                 "completed_at": entry.get("completed_at"),
@@ -691,6 +694,7 @@ def list_history() -> dict:
                     "id": jid,
                     "query": j["query"],
                     "mode": j.get("mode", "auto"),
+                    "max_rounds": j.get("max_rounds", 3),
                     "status": j["status"],
                     "sources_count": len(j["sources"]),
                     "created_at": j["created_at"],
