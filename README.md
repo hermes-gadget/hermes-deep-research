@@ -2,7 +2,7 @@
 
 > Multi-step web research with automated source gathering and report synthesis.
 > Inspired by [Odysseus](https://github.com/pewdiepie-archdaemon/odysseus) Deep Research,
-> powered by Hermes's own LLM and web tools.
+> powered by Hermes's core and tools.
 
 ## What it does
 
