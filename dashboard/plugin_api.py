@@ -171,10 +171,19 @@ def _read_hermes_config() -> dict:
     return {}
 
 
+def _all_providers(cfg: dict) -> Dict[str, dict]:
+    """Return unified providers dict from both standard and custom providers."""
+    unified = dict(cfg.get("providers") or {})
+    for i, cp in enumerate(cfg.get("custom_providers") or []):
+        name = cp.get("name") or f"custom_{i}"
+        unified[name] = cp
+    return unified
+
+
 def _get_llm_settings() -> Dict[str, str]:
     """Resolve LLM provider settings from Hermes config or env."""
     cfg = _read_hermes_config()
-    providers = cfg.get("providers", {})
+    providers = _all_providers(cfg)
     # Try each provider in order
     for _name, prov in providers.items():
         api_key = prov.get("api_key", "")
@@ -322,7 +331,7 @@ def _resolve_model_override(model_value: Optional[str]) -> Dict[str, str]:
     elif len(parts) == 2:
         # provider:model
         prov_name, model_id = parts
-        p = (cfg.get("providers") or {}).get(prov_name, {})
+        p = _all_providers(cfg).get(prov_name, {})
         return {"api_key": p.get("api_key", ""), "base_url": p.get("base_url"), "model": model_id}
     return _get_llm_settings()
 
@@ -695,7 +704,7 @@ def list_models() -> dict:
     cfg = _read_hermes_config()
     models = []
     seen = set()
-    providers = cfg.get("providers") or {}
+    providers = _all_providers(cfg)
     for name, p in providers.items():
         pname = p.get("name", name)
         model = p.get("model", "")

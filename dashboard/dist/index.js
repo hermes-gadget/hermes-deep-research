@@ -9,12 +9,12 @@
 
   var TAU = Math.PI * 2;
   var COLORS = {
-    root:  "#22d3ee",   /* primary cyan */
-    agent: "#a78bfa",   /* violet */
-    step:  "#60a5fa",   /* blue */
-    doc:   "#34d399",   /* emerald */
-    error: "#f87171",   /* red */
-    edge:  "#475569",   /* slate */
+    root:  "#22d3ee",
+    agent: "#a78bfa",
+    step:  "#60a5fa",
+    doc:   "#34d399",
+    error: "#f87171",
+    edge:  "#475569",
     glow:  "rgba(34,211,238,0.25)",
     text:  "#e2e8f0",
   };
@@ -378,10 +378,10 @@
     return React.createElement("div", { className: "space-y-1.5 mt-3 max-h-60 overflow-y-auto" },
       children.length > 0 && React.createElement("div", { className: "flex gap-2 mb-2" },
         children.map(function (c) {
-          var statusColor = c.status === "done" ? "bg-emerald-500" : c.status === "running" ? "bg-blue-500" : "bg-gray-500";
+          var statusStyle = c.status === "done" ? { background: "var(--color-primary)" } : c.status === "running" ? { background: "var(--color-ring)" } : { background: "var(--color-muted-foreground)" };
           return React.createElement("div", { key: c.id, className: "flex-1 rounded-md border border-border p-2 text-xs" },
             React.createElement("div", { className: "flex items-center gap-1.5 mb-1" },
-              React.createElement("div", { className: "w-2 h-2 rounded-full " + statusColor }),
+              React.createElement("div", { className: "w-2 h-2 rounded-full", style: statusStyle }),
               React.createElement("span", { className: "font-semibold truncate" }, c.title)
             ),
             React.createElement("div", { className: "text-[10px] text-muted-foreground uppercase tracking-wider" }, c.status)
@@ -475,6 +475,7 @@
     var _loading = useState(false); var loading = _loading[0], setLoading = _loading[1];
     var _historyLoading = useState(true); var historyLoading = _historyLoading[0], setHistoryLoading = _historyLoading[1];
     var _kanban = useState({}); var kanbanMap = _kanban[0], setKanban = _kanban[1];
+    var _archiveOpen = useState(false); var archiveOpen = _archiveOpen[0], setArchiveOpen = _archiveOpen[1];
     var pollRefs = useRef({});
 
     function startPolling(jobId) {
@@ -683,25 +684,48 @@
       /* Inline report */
       report && React.createElement(ReportView, { report: report, sources: reportSources }),
       /* Past Research */
-      React.createElement("div", { className: "mt-6" },
+      React.createElement("div", { className: "dr-section-gap" },
         React.createElement("div", { className: "flex items-center justify-between mb-3 flex-wrap gap-2" },
           React.createElement("div", { className: "flex items-center gap-2" },
             React.createElement("span", { className: "text-sm font-semibold uppercase tracking-wider text-foreground" }, "Past research"),
             React.createElement("span", { className: "text-xs text-muted-foreground" }, pastJobs.length + " research")
           ),
           React.createElement("div", { className: "flex items-center gap-2" },
-            pastJobs.length > 0 && React.createElement("button", { className: "flex items-center gap-1 px-2 py-1 rounded-md border border-border text-muted-foreground text-xs hover:border-ring hover:text-foreground transition-colors", onClick: clearAll }, "✕ Clear all"),
-            hasRunning && React.createElement("div", { className: "w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" }),
-            React.createElement("div", { className: "text-xs text-muted-foreground" }, "All past research found in ", React.createElement("a", { className: "underline text-foreground" }, "Library, Research"))
+            pastJobs.length > 0 && React.createElement("button", { className: "flex items-center gap-1 px-2 py-1 rounded-md border border-border text-muted-foreground text-xs hover:border-ring hover:text-foreground transition-colors", onClick: function () { setArchiveOpen(true); } }, "📦 Archive"),
+            hasRunning && React.createElement("div", { className: "w-2 h-2 rounded-full flex-shrink-0", style: { background: "var(--color-primary)" } }),
+            React.createElement("div", { className: "text-xs text-muted-foreground" }, "Showing last 3")
           )
         ),
         pastJobs.length === 0 && !historyLoading
           ? React.createElement("div", { className: "p-8 text-center text-muted-foreground text-sm" }, "No past research yet. Start your first deep research above.")
           : React.createElement("div", { className: "flex flex-col gap-2" },
-              pastJobs.map(function (j) {
+              pastJobs.slice(0, 3).map(function (j) {
                 return React.createElement(PastItem, { key: j.id, job: j, onLoadReport: loadReport, onDiscuss: discussJob, onDelete: deleteJob, onCopy: copyReport });
               })
             )
+      ),
+      /* Archive Overlay */
+      archiveOpen && React.createElement("div", { className: "dr-overlay", onClick: function () { setArchiveOpen(false); } },
+        React.createElement("div", { className: "dr-overlay-box", onClick: function (e) { e.stopPropagation(); } },
+          React.createElement("div", { className: "dr-overlay-header" },
+            React.createElement("span", { className: "text-sm font-semibold uppercase tracking-wider text-foreground" }, "Archive (" + pastJobs.length + ")"),
+            React.createElement("button", { className: "flex items-center gap-1 px-2 py-1 rounded-md border border-border text-muted-foreground text-xs hover:border-ring hover:text-foreground transition-colors", onClick: function () { setArchiveOpen(false); } }, "✕ Close")
+          ),
+          React.createElement("div", { className: "dr-overlay-scroll" },
+            pastJobs.length === 0
+              ? React.createElement("div", { className: "p-8 text-center text-muted-foreground text-sm" }, "No archived research.")
+              : pastJobs.map(function (j) {
+                  var elapsed = j.completed_at && j.created_at ? fmtDuration(j.completed_at - j.created_at) : null;
+                  return React.createElement("div", { key: j.id, className: "dr-archive-row" },
+                    React.createElement("span", { className: "dr-tag" }, j.mode || "auto"),
+                    React.createElement("span", { className: "query" }, j.query),
+                    React.createElement("span", { className: "meta" }, elapsed || ""),
+                    React.createElement("button", { className: "flex items-center gap-1 px-2 py-1 rounded-md border border-ring text-foreground text-xs hover:bg-accent transition-colors flex-shrink-0", onClick: function () { loadReport(j.id); setArchiveOpen(false); } }, "📊 Report"),
+                    React.createElement("button", { className: "flex items-center gap-1 px-2 py-1 rounded-md border border-destructive/30 text-destructive text-xs hover:border-destructive hover:bg-destructive/10 transition-colors flex-shrink-0", onClick: function () { deleteJob(j.id); } }, "🗑 Delete")
+                  );
+                })
+          )
+        )
       )
     );
   }
