@@ -577,7 +577,10 @@
 
     var loadReport = useCallback(function (id) {
       apiFetch("/results/" + id).then(function (r) {
-        if (r.status === "error") {
+        if (r.error === "not found") {
+          setReport("## ❌ Research Not Found\n\nThis research no longer exists. It may have been deleted or expired.");
+          setReportSources([]);
+        } else if (r.status === "error") {
           setReport("## ❌ Research Failed\n\n**Error:** " + (r.error || "Unknown error") + "\n\n**Query:** " + r.query);
           setReportSources(r.sources || []);
         } else if (!r.report) {

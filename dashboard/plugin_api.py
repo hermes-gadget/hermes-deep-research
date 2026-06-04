@@ -511,6 +511,11 @@ def _run_research(job_id: str, query: str, max_rounds: int = 3, mode: str = "aut
             json.dump({
                 "id": job_id,
                 "query": query,
+                "status": job["status"],
+                "current_step": job["current_step"],
+                "error": job.get("error"),
+                "mode": job.get("mode", "auto"),
+                "max_rounds": job.get("max_rounds", 3),
                 "report": report,
                 "sources": job["sources"],
                 "steps": job["steps"],
@@ -653,18 +658,33 @@ def get_kanban(job_id: str) -> dict:
 @router.get("/results/{job_id}")
 def get_results(job_id: str) -> dict:
     job = _jobs.get(job_id)
-    if not job:
-        return {"error": "not found"}
-    return {
-        "id": job["id"],
-        "query": job["query"],
-        "status": job["status"],
-        "current_step": job["current_step"],
-        "report": job["report"],
-        "sources": job["sources"],
-        "steps": job["steps"],
-        "error": job["error"],
-    }
+    if job:
+        return {
+            "id": job["id"],
+            "query": job["query"],
+            "status": job["status"],
+            "current_step": job["current_step"],
+            "report": job["report"],
+            "sources": job["sources"],
+            "steps": job["steps"],
+            "error": job.get("error"),
+        }
+    # Fallback: load from persisted JSON after memory cleanup
+    fp = _data_dir() / f"{job_id}.json"
+    if fp.exists():
+        with open(fp) as f:
+            entry = json.load(f)
+        return {
+            "id": entry.get("id", job_id),
+            "query": entry.get("query", ""),
+            "status": entry.get("status", "completed"),
+            "current_step": entry.get("current_step", ""),
+            "report": entry.get("report"),
+            "sources": entry.get("sources", []),
+            "steps": entry.get("steps", []),
+            "error": entry.get("error"),
+        }
+    return {"error": "not found"}
 
 
 @router.get("/history")
