@@ -24,6 +24,7 @@
 <header>
   <h1>🧠 Agent Graph</h1>
   <button class="primary" id="btnStart">Start Research</button>
+  <button id="btnAgent">+ Agent</button>
   <button id="btnStep">+ Step</button>
   <button id="btnDoc">+ Document</button>
   <button id="btnErr">Inject Error</button>
@@ -32,7 +33,8 @@
 <div id="stage"><canvas id="g"></canvas>
   <div class="legend">
     <span class="dot" style="background:#22d3ee"></span>Orchestrator<br>
-    <span class="dot" style="background:#818cf8"></span>Step<br>
+    <span class="dot" style="background:#a78bfa"></span>Agent<br>
+    <span class="dot" style="background:#60a5fa"></span>Step<br>
     <span class="dot" style="background:#34d399"></span>Document<br>
     <span class="dot" style="background:#f87171"></span>Error
   </div>
@@ -44,24 +46,31 @@
   graph.setRoot("Orchestrator");
 
   var stepId = 0;
-  var activeSteps = [];
+  var agents = [];
+  var steps = [];
 
   function randLabel(prefix) {
-    var words = ["Alpha","Beta","Gamma","Delta","Query","Source","Excerpt","Analysis","Synthesis","Crawl"];
+    var words = ["Alpha","Beta","Gamma","Delta","Query","Source","Excerpt","Analysis","Synthesis","Crawl","Index","Rank"];
     return prefix + " " + words[Math.floor(Math.random()*words.length)];
   }
 
   document.getElementById('btnStart').onclick = function () {
     graph.setRoot("Orchestrator");
-    activeSteps = [];
+    agents = []; steps = [];
     stepId = 0;
-    var steps = ["Decompose","Search","Analyze","Synthesize"];
-    steps.forEach(function (s, i) {
+    /* Spawn agent under root */
+    var agentId = "a" + (++stepId);
+    graph.addNode(agentId, "agent", "Research Agent", "root");
+    graph.setState(agentId, "active", 0);
+    agents.push(agentId);
+    /* Spawn steps under agent */
+    var stepNames = ["Decompose","Search","Analyze","Synthesize"];
+    stepNames.forEach(function (s, i) {
       setTimeout(function () {
         var id = "s" + (++stepId);
-        graph.addNode(id, "step", s, "root");
+        graph.addNode(id, "step", s, agentId);
         graph.setState(id, "active", 0);
-        activeSteps.push(id);
+        steps.push(id);
         /* Simulate progress then completion */
         var prog = 0;
         var iv = setInterval(function () {
@@ -73,30 +82,40 @@
     });
   };
 
-  document.getElementById('btnStep').onclick = function () {
-    var id = "s" + (++stepId);
-    graph.addNode(id, "step", randLabel("Step"), "root");
+  document.getElementById('btnAgent').onclick = function () {
+    var id = "a" + (++stepId);
+    graph.addNode(id, "agent", randLabel("Agent"), "root");
     graph.setState(id, "active", 0.2);
-    activeSteps.push(id);
+    agents.push(id);
+  };
+
+  document.getElementById('btnStep').onclick = function () {
+    if (!agents.length) return;
+    var parent = agents[Math.floor(Math.random()*agents.length)];
+    var id = "s" + (++stepId);
+    graph.addNode(id, "step", randLabel("Step"), parent);
+    graph.setState(id, "active", 0.2);
+    steps.push(id);
   };
 
   document.getElementById('btnDoc').onclick = function () {
-    if (!activeSteps.length) return;
-    var parent = activeSteps[Math.floor(Math.random()*activeSteps.length)];
+    if (!steps.length) return;
+    var parent = steps[Math.floor(Math.random()*steps.length)];
     var id = "d" + (++stepId);
     graph.addNode(id, "doc", randLabel("Doc"), parent);
     graph.setState(id, "done", 1);
   };
 
   document.getElementById('btnErr').onclick = function () {
-    if (!activeSteps.length) return;
-    var id = activeSteps[Math.floor(Math.random()*activeSteps.length)];
+    var pool = steps.length ? steps : agents;
+    if (!pool.length) return;
+    var id = pool[Math.floor(Math.random()*pool.length)];
     graph.setState(id, "error", 1);
   };
 
   document.getElementById('btnReset').onclick = function () {
     graph.setRoot("Orchestrator");
-    activeSteps = [];
+    agents = []; steps = [];
     stepId = 0;
   };
 </script>

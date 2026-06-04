@@ -10,7 +10,8 @@
   var TAU = Math.PI * 2;
   var COLORS = {
     root:  "#22d3ee",   /* primary cyan */
-    step:  "#818cf8",   /* indigo */
+    agent: "#a78bfa",   /* violet */
+    step:  "#60a5fa",   /* blue */
     doc:   "#34d399",   /* emerald */
     error: "#f87171",   /* red */
     edge:  "#475569",   /* slate */
@@ -25,12 +26,12 @@
   /* —— Node —— */
   function Node(id, type, label, parent) {
     this.id = id;
-    this.type = type;        /* root | step | doc | error */
+    this.type = type;        /* root | agent | step | doc | error */
     this.label = label;
     this.parent = parent || null;
     this.x = 0; this.y = 0;
     this.vx = 0; this.vy = 0;
-    this.radius = type === "root" ? 28 : type === "step" ? 18 : 12;
+    this.radius = type === "root" ? 28 : type === "agent" ? 22 : type === "step" ? 16 : 12;
     this.targetR = this.radius;
     this.birth = performance.now();
     this.state = "spawn";    /* spawn | idle | active | done | error */
@@ -41,6 +42,7 @@
   Node.prototype.color = function () {
     if (this.state === "error") return COLORS.error;
     if (this.type === "root") return COLORS.root;
+    if (this.type === "agent") return COLORS.agent;
     if (this.type === "doc") return COLORS.doc;
     return COLORS.step;
   };
@@ -136,7 +138,7 @@
       if (a === root) continue;
 
       /* Spring toward parent */
-      var ideal = a.type === "step" ? 140 : 90;
+      var ideal = a.type === "agent" ? 180 : a.type === "step" ? 120 : 80;
       dx = a.x - a.parent.x; dy = a.y - a.parent.y;
       d = Math.sqrt(dx*dx + dy*dy) || 1;
       f = (d - ideal) * 0.015;
@@ -252,7 +254,7 @@
 
       /* Label */
       ctx.fillStyle = COLORS.text;
-      ctx.font = (n.type === "root" ? "bold 12px" : "11px") + " system-ui, sans-serif";
+      ctx.font = (n.type === "root" || n.type === "agent" ? "bold 12px" : "11px") + " system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(n.label, cx, cy + r + 14);
