@@ -287,7 +287,7 @@
   }
 
   var MODES = ["auto", "product", "compare", "how-to", "fact-check"];
-  var STEP_ICONS = { init: "◉", decompose: "⑂", analyze: "⊕", search: "⊘", extract: "↓", synthesize: "✦", done: "✓", error: "✕" };
+  var STEP_ICONS = { init: "◉", decompose: "⑂", analyze: "⊕", search: "🔍", extract: "↓", synthesize: "✦", done: "✓", error: "✕" };
   var STEP_LABELS = { init: "Initializing", decompose: "Planning", analyze: "Analyzing gaps", search: "Searching", extract: "Extracting", synthesize: "Writing report", done: "Complete", error: "Error" };
 
   function md(text) {
@@ -470,6 +470,7 @@
       React.createElement("div", { className: "flex items-center gap-2 px-3 py-2.5 flex-wrap" },
         React.createElement("div", { className: "text-sm font-medium text-foreground truncate flex-1 min-w-[150px]" }, job.query),
         React.createElement("span", { className: "dr-tag" }, job.mode || "auto"),
+        job.folder && job.folder !== "default" ? React.createElement("span", { className: "dr-tag", style: { background: "rgba(99,102,241,0.15)", color: "#818cf8" } }, "📁 " + job.folder) : null,
         React.createElement("div", { className: "flex items-center gap-2 text-xs text-muted-foreground" },
           running ? React.createElement("div", { className: "dr-spinner" }) : null,
           elapsed && React.createElement("span", null, elapsed),
@@ -558,9 +559,9 @@
       setLoading(true);
       apiFetch("/research", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, mode: mode, rounds: rounds === "auto" ? null : parseInt(rounds, 10), engine: engine === "default" ? null : engine, model: model === "default" ? null : model })
+        body: JSON.stringify({ query: q, mode: mode, folder: "default", rounds: rounds === "auto" ? null : parseInt(rounds, 10), engine: engine === "default" ? null : engine, model: model === "default" ? null : model })
       }).then(function (data) {
-        var newJob = { id: data.id, query: q, mode: mode, status: "running", current_step: "init", steps: [], sources_count: 0, has_report: false, created_at: Date.now() / 1000, kanban_parent_id: data.kanban_parent_id };
+        var newJob = { id: data.id, query: q, mode: mode, folder: "default", status: "running", current_step: "init", steps: [], sources_count: 0, has_report: false, created_at: Date.now() / 1000, kanban_parent_id: data.kanban_parent_id };
         setActiveJobs(function (prev) { return [newJob].concat(prev); });
         startPolling(data.id); setQuery(""); setLoading(false);
       }).catch(function () { setLoading(false); });
@@ -748,6 +749,7 @@
                   var elapsed = j.completed_at && j.created_at ? fmtDuration(j.completed_at - j.created_at) : null;
                   return React.createElement("div", { key: j.id, className: "dr-archive-row" },
                     React.createElement("span", { className: "dr-tag" }, j.mode || "auto"),
+                    j.folder && j.folder !== "default" ? React.createElement("span", { className: "dr-tag", style: { background: "rgba(99,102,241,0.15)", color: "#818cf8" } }, "📁 " + j.folder) : null,
                     React.createElement("span", { className: "query" }, j.query),
                     React.createElement("span", { className: "meta" }, elapsed || ""),
                     React.createElement("button", { className: "flex items-center gap-1 px-2 py-1 rounded-md border border-ring text-foreground text-xs hover:bg-accent transition-colors flex-shrink-0", onClick: function () { loadReport(j.id); setArchiveOpen(false); } }, "📊 Report"),

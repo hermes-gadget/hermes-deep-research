@@ -516,6 +516,7 @@ def _run_research(job_id: str, query: str, max_rounds: int = 3, mode: str = "aut
                 "error": job.get("error"),
                 "mode": job.get("mode", "auto"),
                 "max_rounds": job.get("max_rounds", 3),
+                "folder": job.get("folder", "default"),
                 "report": report,
                 "sources": job["sources"],
                 "steps": job["steps"],
@@ -575,6 +576,7 @@ def start_research(body: dict) -> dict:
         "query": query,
         "mode": (body.get("mode") or "auto").strip().lower(),
         "max_rounds": max_rounds,
+        "folder": (body.get("folder") or "default").strip(),
         "status": "running",
         "current_step": "init",
         "steps": [],
@@ -628,6 +630,7 @@ def get_status(job_id: str) -> dict:
         "error": job["error"],
         "updated_at": job["updated_at"],
         "max_rounds": job.get("max_rounds", 3),
+        "folder": job.get("folder", "default"),
         "kanban_parent_id": job.get("kanban_parent_id"),
         "kanban_children": _kanban_get_children(job.get("kanban_parent_id") or "") if job.get("kanban_parent_id") else [],
     }
@@ -668,6 +671,7 @@ def get_results(job_id: str) -> dict:
             "sources": job["sources"],
             "steps": job["steps"],
             "error": job.get("error"),
+            "folder": job.get("folder", "default"),
         }
     # Fallback: load from persisted JSON after memory cleanup
     fp = _data_dir() / f"{job_id}.json"
@@ -683,6 +687,7 @@ def get_results(job_id: str) -> dict:
             "sources": entry.get("sources", []),
             "steps": entry.get("steps", []),
             "error": entry.get("error"),
+            "folder": entry.get("folder", "default"),
         }
     return {"error": "not found"}
 
@@ -700,6 +705,7 @@ def list_history() -> dict:
                 "query": entry.get("query", ""),
                 "mode": entry.get("mode", "auto"),
                 "max_rounds": entry.get("max_rounds", 3),
+                "folder": entry.get("folder", "default"),
                 "sources_count": len(entry.get("sources", [])),
                 "created_at": entry.get("created_at"),
                 "completed_at": entry.get("completed_at"),
@@ -715,6 +721,7 @@ def list_history() -> dict:
                     "query": j["query"],
                     "mode": j.get("mode", "auto"),
                     "max_rounds": j.get("max_rounds", 3),
+                    "folder": j.get("folder", "default"),
                     "status": j["status"],
                     "sources_count": len(j["sources"]),
                     "created_at": j["created_at"],
