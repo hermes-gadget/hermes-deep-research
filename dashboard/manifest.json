@@ -1,0 +1,14 @@
+{
+  "name": "deep-research",
+  "label": "Deep Research",
+  "description": "Multi-step web research: query decomposition, source gathering, gap analysis, and synthesis into a cited report.",
+  "icon": "Search",
+  "version": "2.0.0",
+  "tab": {
+    "path": "/deep-research",
+    "position": "after:analytics"
+  },
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}
