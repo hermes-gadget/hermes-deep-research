@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deep Research</title>
+  <link rel="stylesheet" href="/dist/style.css" />
+  <style>
+    html, body { margin: 0; background: #0b1220; color: #e2e8f0; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    #root { min-height: 100vh; }
+    #boot-error { display: none; margin: 2rem auto; max-width: 640px; padding: 1rem 1.25rem;
+                  border: 1px solid #f87171; border-radius: 8px; background: #1f2937; color: #fca5a5; }
+  </style>
+  <script>
+    /* Standalone auth: open /?token=<token> once (sets a cookie), or the token
+       arrives via cookie already. The bundle sends it as X-Hermes-Session-Token. */
+    window.__HERMES_SESSION_TOKEN__ = (function () {
+      var m = document.cookie.match(/(?:^|;\s*)dr_token=([^;]+)/);
+      var q = new URLSearchParams(window.location.search).get("token");
+      return q || (m ? decodeURIComponent(m[1]) : "");
+    })();
+  </script>
+</head>
+<body>
+  <div id="boot-error"></div>
+  <div id="root"></div>
+  <script src="/vendor/react.production.min.js"></script>
+  <script src="/vendor/react-dom.production.min.js"></script>
+  <script src="/sdk-shim.js"></script>
+  <script src="/dist/index.js"></script>
+</body>
+</html>
