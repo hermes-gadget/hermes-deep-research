@@ -92,7 +92,10 @@ Run the same UI without the Hermes dashboard:
 
 ```bash
 pip install -r standalone/requirements.txt   # fastapi, uvicorn, pyyaml, openai
-python3 standalone/server.py                 # http://127.0.0.1:8787
+python3 standalone/server.py                 # http://127.0.0.1:8842
+
+# or run a one-off research job from the CLI (same engine, saves to history):
+python3 standalone/run.py "your research question"
 ```
 
 - Serves the plugin's API + bundled frontend with a Hermes plugin-SDK shim

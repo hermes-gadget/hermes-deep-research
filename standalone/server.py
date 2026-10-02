@@ -6,7 +6,7 @@ bundled frontend (with a Hermes plugin-SDK shim), so the same UI runs outside
 the dashboard.
 
 Usage:
-  python3 standalone/server.py [--host 127.0.0.1] [--port 8787] [--token TOKEN]
+  python3 standalone/server.py [--host 127.0.0.1] [--port 8842] [--token TOKEN]
 
 Env vars DR_HOST / DR_PORT / DR_TOKEN work too. Requirements:
   pip install -r standalone/requirements.txt
@@ -107,7 +107,7 @@ def create_app(token: str | None = None):
 def main() -> int:
     ap = argparse.ArgumentParser(description="Standalone Deep Research web UI")
     ap.add_argument("--host", default=os.environ.get("DR_HOST", "127.0.0.1"))
-    ap.add_argument("--port", type=int, default=int(os.environ.get("DR_PORT", "8787")))
+    ap.add_argument("--port", type=int, default=int(os.environ.get("DR_PORT", "8842")))
     ap.add_argument("--token", default=os.environ.get("DR_TOKEN") or None,
                     help="optional shared token; open /?token=<token> once")
     args = ap.parse_args()
